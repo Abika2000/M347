@@ -1,0 +1,48 @@
+## DockerFile
+
+Base image. Change the version if you want (e.g. nginx:1.27-alpine)
+**FROM nginx:alpine**
+
+COPY <path on YOUR computer> <path inside the container>
+LEFT side: must match your real folder name (here "www"), relative to the Dockerfile
+RIGHT side: must stay /usr/share/nginx/html, because nginx serves files from there
+**COPY www/ /usr/share/nginx/html/**
+
+Documentation only: nginx listens on port 80 inside the container
+**EXPOSE 80**
+
+## Container ohne Img
+
+docker run --name helloword -v C:\M347\helloword:/usr/share/nginx/html:ro -p 80:80 -d nginx
+
+## Build and run the image
+
+cd project
+docker build -t my-website .
+docker run -d -p 8080:80 --name my-site-name imagename:tag
+
+## Bind a data saveing place
+
+Use $(pwd) for the current directory
+**docker run -v "$(pwd)/data":/app/data myimage\*\*
+
+Long syntax (--mount): more explicit, recommended
+**docker run --mount type=bind,source=/home/user/data,target=/app/data myimage**
+
+## Docker Compose:
+
+services:
+app: # service name (your choice)
+image: nginx:latest # image to use
+container_name: myapp # optional fixed name
+ports: - "8080:80" # host:container
+environment: - TZ=Europe/Zurich
+volumes: - ./data:/usr/share/nginx/html # bind mount: host folder : container path
+restart: unless-stopped
+
+## Commands to run
+
+docker compose up -d # start in the background
+docker compose ps # see running containers
+docker compose logs -f # follow logs
+docker compose down # stop and remove the containers

@@ -1,0 +1,13 @@
+services:
+  app: # service name (your choice)
+    image: helloword:1.0 # image to use
+    container_name: myapp # optional fixed name
+    ports:
+      - "8080:80" # host:container
+    environment:
+      - TZ=Europe/Zurich
+    volumes:
+      - ./www:/usr/share/nginx/html:ro # read-only bind mount
+      - ./data:/app/data # bind mount: host folder : container path
+      # - //192.168.1.50/share:/app/data # network share bind mount
+    restart: unless-stopped
