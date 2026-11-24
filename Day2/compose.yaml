@@ -1,25 +1,31 @@
 services:
+  # Main HTTPS reverse proxy: forwards browser requests to Vaultwarden.
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
+      # Only the local computer can reach this port; default host port is 8081.
       - "127.0.0.1:${PORT:-8081}:443"
     volumes:
+      # Mount the proxy configuration and certificate as read-only files.
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./certs:/etc/nginx/certs:ro
     depends_on:
       - vaultwarden
     networks:
       - frontend
+    # CPU and memory limits apply to each container.
     cpus: 0.5
     mem_limit: 128m
 
+  # Optional replicas for the scaling demonstration; not a load balancer.
   nginx-scale:
     image: nginx:1.27-alpine
     profiles:
       - scaling
     restart: unless-stopped
     ports:
+      # Docker assigns a different local host port to each replica.
       - "127.0.0.1::443"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
@@ -31,17 +37,21 @@ services:
     cpus: 0.5
     mem_limit: 128m
 
+  # Password manager application, connected to both networks.
   vaultwarden:
     image: vaultwarden/server:1.36.0
     restart: unless-stopped
     environment:
       DOMAIN: "${DOMAIN:-https://localhost:8081}"
       SIGNUPS_ALLOWED: "${SIGNUPS_ALLOWED:-true}"
+      # DB_PASSWORD must be set in .env; use URL-safe letters and numbers.
       DATABASE_URL: "postgresql://vaultwarden:${DB_PASSWORD:?Set DB_PASSWORD in .env}@db:5432/vaultwarden"
     volumes:
+      # Persist Vaultwarden files, including attachments and keys.
       - vaultwarden_data:/data
     depends_on:
       db:
+        # Wait for PostgreSQL to accept connections before starting.
         condition: service_healthy
     networks:
       - frontend
@@ -49,6 +59,7 @@ services:
     cpus: 1.0
     mem_limit: 512m
 
+  # PostgreSQL stores the Vaultwarden database and has no published host port.
   db:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -57,8 +68,10 @@ services:
       POSTGRES_USER: vaultwarden
       POSTGRES_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in .env}"
     volumes:
+      # Keep database files when containers are recreated.
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
+      # Check whether PostgreSQL is ready to accept connections.
       test: ["CMD-SHELL", "pg_isready -U vaultwarden -d vaultwarden"]
       interval: 5s
       timeout: 5s
@@ -69,10 +82,13 @@ services:
     mem_limit: 512m
 
 networks:
+  # nginx and Vaultwarden communicate on the frontend network.
   frontend:
+  # Only Vaultwarden and PostgreSQL use the internal backend network.
   backend:
     internal: true
 
+# Named volumes persist beyond container removal unless explicitly deleted.
 volumes:
   vaultwarden_data:
   postgres_data:
