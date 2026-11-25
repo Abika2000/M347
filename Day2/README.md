@@ -29,9 +29,12 @@ kompatiblen Server), PostgreSQL und nginx als Reverse Proxy.
 4. Container starten:
 
    ```powershell
-   docker compose up -d
-   docker compose ps
+   .\deploy.ps1
    ```
+
+   Das Skript baut zuerst das nginx-Image und startet danach die Services.
+   Nach Änderungen an `nginx.conf` das Skript erneut ausführen, damit die
+   Konfiguration neu ins Image übernommen wird.
 
 5. `https://localhost:8081` im Browser oeffnen und ein Konto erstellen. Bei
    der Zertifikatswarnung fuer diese lokale Testseite "Erweitert" und
